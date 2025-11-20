@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  test:
+    build: .
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./pytest.ini:/app/pytest.ini
+    environment:
+      - PYTHONUNBUFFERED=1
