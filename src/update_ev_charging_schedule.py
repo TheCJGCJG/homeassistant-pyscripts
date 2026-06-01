@@ -9,8 +9,8 @@ _LOGGER = logging.getLogger(__name__)
 READY_BY_INPUT_DATETIME_ENTITY_ID = 'input_datetime.ev_charger_ready_by'
 OCTOPUS_CURRENT_RATES_ENTITY_ID = 'event.octopus_energy_electricity_XXX_XXX_current_day_rates'
 OCTOPUS_NEXT_RATES_ENTITY_ID = 'event.octopus_energy_electricity_XXX_XXX_next_day_rates'
-AGILE_PREDICT_SENSOR_ENTITY_ID = 'sensor.agile_predict'
-CHARGING_HOURS_INPUT_NUMBER_ENTITY_ID = 'input_number.car_charging_hours_required'
+AGILE_PREDICT_SENSOR_ENTITY_ID = 'sensor.agile_forecast'
+CHARGING_HOURS_INPUT_NUMBER_ENTITY_ID = 'input_number.polestar_2_charging_hours_required'
 
 # --- Output Sensor Entity IDs ---
 CHEAPEST_START_TIME_SENSOR = 'sensor.ev_charging_cheapest_start_time'

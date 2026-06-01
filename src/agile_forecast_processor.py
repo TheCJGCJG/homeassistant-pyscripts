@@ -70,7 +70,7 @@ def get_time_block_info(dt):
     return None, None
 
 
-def set_sensors_unavailable(reason, source_entity="sensor.agile_predict"):
+def set_sensors_unavailable(reason, source_entity="sensor.agile_forecast"):
     """
     Sets all forecast sensors to unavailable with appropriate attributes.
     
@@ -113,7 +113,7 @@ def update_agile_forecasts():
     4. Updates corresponding Home Assistant sensors
     """
     _LOGGER.info("Starting Agile forecast update")
-    entity_id = 'sensor.agile_predict'
+    entity_id = 'sensor.agile_forecast'
 
     # Get Home Assistant's current time (timezone-aware)
     try:
@@ -287,7 +287,7 @@ def update_agile_forecasts():
         attributes['icon'] = 'mdi:currency-gbp'
         attributes['friendly_name'] = f"Agile Forecast {hours} Hours"
         attributes['all_blocks_present'] = all_blocks_present
-        attributes['source_entity'] = 'sensor.agile_predict'
+        attributes['source_entity'] = 'sensor.agile_forecast'
         attributes['overall_average'] = overall_attr
         
         # Update the sensor
