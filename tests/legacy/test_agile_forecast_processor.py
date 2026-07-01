@@ -1,3 +1,4 @@
+# LEGACY — tests for agile_forecast_processor.py (superseded by ev_charging_state_machine.py)
 """Tests for agile_forecast_processor.py"""
 import pytest
 from datetime import datetime, time, date, timedelta
@@ -6,7 +7,7 @@ import sys
 import os
 
 # Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src', 'legacy'))
 
 # Mock Home Assistant modules before importing
 sys.modules['homeassistant'] = MagicMock()

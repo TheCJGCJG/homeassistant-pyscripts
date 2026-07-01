@@ -24,3 +24,6 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# HA stuff
+automation.yaml

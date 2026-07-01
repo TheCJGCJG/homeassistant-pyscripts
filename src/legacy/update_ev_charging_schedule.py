@@ -1,3 +1,5 @@
+# LEGACY — superseded by ev_charging_state_machine.py
+# Kept for reference. Do not deploy alongside the new state machine.
 # pyscript/ev_charging_schedule.py
 from datetime import datetime, timedelta
 import logging

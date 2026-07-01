@@ -1,0 +1,416 @@
+wallpanel:
+  enabled: false
+views:
+  - type: sections
+    max_columns: 3
+    title: New Charging
+    path: new-charging
+    icon: mdi:lightning-bolt-circle
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: State
+            heading_style: title
+          - type: tile
+            entity: sensor.ev_charging_state
+            name: Charging Mode
+            icon: mdi:state-machine
+            state_content: state
+            color: blue
+          - type: tile
+            entity: binary_sensor.ev_charging_desired
+            name: Charger Signal
+            icon: mdi:ev-station
+            state_content: state
+            color: green
+          - type: tile
+            entity: sensor.ev_charging_hours_remaining
+            name: Hours Remaining
+            icon: mdi:timer-outline
+          - type: tile
+            entity: sensor.polestar_2_battery_charge_level
+            name: Battery
+            icon: mdi:battery
+            features:
+              - type: bar-gauge
+          - type: entities
+            title: Next Session
+            show_header_toggle: false
+            entities:
+              - entity: sensor.ev_charging_next_slot_start
+                name: Starts
+                icon: mdi:clock-start
+              - entity: sensor.ev_charging_next_slot_end
+                name: Ends
+                icon: mdi:clock-end
+              - entity: sensor.car_charger_work_state
+                name: Charger State
+                secondary_info: last-changed
+              - entity: sensor.car_charger_power
+                name: Power
+                icon: mdi:flash
+          - chart_type: line
+            period: hour
+            type: statistics-graph
+            entities:
+              - sensor.ev_charger_total_energy
+            title: Energy (Today)
+            stat_types:
+              - change
+            days_to_show: 1
+            logarithmic_scale: false
+      - type: grid
+        cards:
+          - type: heading
+            heading: Schedule
+            heading_style: title
+          - type: markdown
+            title: Charging Sessions
+            content: >
+              {% set slots = state_attr('sensor.ev_charging_schedule', 'slots')
+              %}
+
+              {% set active = state_attr('sensor.ev_charging_schedule',
+              'active_slot') %}
+
+              {% if slots %}
+
+              | | Session | Duration | Avg Price | Confidence |
+
+              |---|---|---|---|---|
+
+              {% for s in slots %}| {{ '▶' if (active and s.start ==
+              active.start) else '◷' }} | **{{ as_timestamp(s.start) |
+              timestamp_custom('%a %d %b, %H:%M') }} – {{ as_timestamp(s.end) |
+              timestamp_custom('%H:%M') }}** | {{ s.duration_hours }}h | {{
+              s.avg_price }}p/kWh | {{ s.confidence | round | int }}% |
+
+              {% endfor %}
+
+              {% else %}
+
+              *No sessions scheduled.*
+
+
+              State: **{{ states('sensor.ev_charging_state') }}**
+
+              {% if state_attr('sensor.ev_charging_schedule', 'error_reason') %}
+
+
+              ⚠ {{ state_attr('sensor.ev_charging_schedule', 'error_reason') }}
+
+              {% endif %}
+
+              {% endif %}
+          - type: markdown
+            title: Schedule Details
+            content: >
+              {% set total = state_attr('sensor.ev_charging_schedule',
+              'total_committed_hours') %}
+
+              {% set hrs = state_attr('sensor.ev_charging_schedule',
+              'hours_remaining') %}
+
+              {% set rby = state_attr('sensor.ev_charging_schedule', 'ready_by')
+              %}
+
+              {% set calc = state_attr('sensor.ev_charging_schedule',
+              'calculated_at') %}
+
+              {% set sched = state_attr('sensor.ev_charging_schedule', 'slots')
+              %}
+
+              | | |
+
+              |---|---|
+
+              | Hours committed | {{ total if total is not none else '—' }}h |
+
+              | Hours remaining | {{ hrs if hrs is not none else '—' }}h |
+
+              | Ready by | {{ as_timestamp(rby) | timestamp_custom('%a %d %b,
+              %H:%M') if rby else '—' }} |
+
+              | Last calculated | {{ as_timestamp(calc) |
+              timestamp_custom('%H:%M') if calc else '—' }} |
+
+              | Sessions | {{ sched | length if sched else 0 }} |
+          - type: entities
+            title: Charging Details
+            show_header_toggle: false
+            entities:
+              - entity: sensor.polestar_2_charging_status
+                name: Car Charging Status
+              - entity: sensor.polestar_2_charger_connection_status
+                name: Connection
+              - entity: sensor.polestar_2_charging_power
+                name: Power
+              - entity: sensor.polestar_2_charging_time
+                name: Time Remaining
+              - entity: sensor.polestar_2_estimated_fully_charged_time
+                name: Full Charge At
+      - type: grid
+        cards:
+          - type: heading
+            heading: Settings
+            heading_style: title
+          - type: entities
+            title: Schedule Inputs
+            show_header_toggle: false
+            entities:
+              - entity: input_datetime.ev_charger_ready_by
+                name: Ready By
+                icon: mdi:calendar-clock
+              - entity: input_number.polestar_2_charging_hours_required
+                name: Hours Needed
+                icon: mdi:clock
+              - entity: input_number.ev_charging_max_price
+                name: Max Price (p/kWh avg)
+                icon: mdi:currency-gbp
+              - entity: input_number.ev_charging_min_block_hours
+                name: Min Block (h)
+                icon: mdi:timer-outline
+              - entity: input_number.ev_charging_gamble_tolerance
+                name: Gamble Tolerance
+                icon: mdi:dice-multiple
+              - entity: input_boolean.automatic_ev_state_changes
+                name: Auto Charger Control
+                icon: mdi:robot
+          - type: button
+            name: Stop Charging
+            icon: mdi:stop-circle-outline
+            tap_action:
+              action: call-service
+              service: input_button.press
+              service_data:
+                entity_id: input_button.ev_charging_stop
+            icon_height: 30px
+          - type: heading
+            heading: Charger Hardware
+            heading_style: subtitle
+          - type: entities
+            show_header_toggle: false
+            entities:
+              - entity: switch.car_charger_switch
+                name: Charger Power Switch
+                secondary_info: last-changed
+              - entity: select.car_charger_work_mode
+                name: Mode
+                secondary_info: last-changed
+              - entity: number.ev_charger_charging_current
+                name: Charging Current
+                secondary_info: last-changed
+  - type: sections
+    max_columns: 4
+    title: Car Charger
+    path: car-charger
+    icon: mdi:ev-plug-type2
+    sections:
+      - type: grid
+        icon: mdi:ev-station
+        cards:
+          - type: heading
+            heading: Charger Settings
+            heading_style: title
+          - type: entities
+            title: EV Charging Schedule Overview
+            entities:
+              - entity: input_datetime.ev_charger_ready_by
+                name: Charging Needed By
+                icon: mdi:calendar-clock
+              - entity: input_boolean.automatic_ev_state_changes
+              - entity: binary_sensor.ev_charging_is_cheapest_period
+                name: Currently Charging Period
+                state_color: true
+                icon: mdi:ev-station
+              - entity: input_number.polestar_2_charging_hours_required
+                name: Charging Hours
+                icon: mdi:clock
+              - entity: input_boolean.set_charge_time_automatically
+                name: Set Charge Hours Automatically
+              - entity: sensor.ev_charging_cheapest_start_time
+                name: Cheapest Period Starts
+                state_display_mode: relative
+                icon: mdi:clock-start
+              - entity: sensor.ev_charging_cheapest_end_time
+                name: Cheapest Period Ends
+                state_display_mode: relative
+                icon: mdi:clock-end
+              - entity: sensor.ev_charging_cheapest_cost
+                name: Avg Cost During Period
+                icon: mdi:currency-gbp
+            show_header_toggle: false
+          - type: entities
+            entities:
+              - entity: input_boolean.ev_charging_currently_desired
+                name: Charger Power Desired
+                secondary_info: last-changed
+              - entity: select.car_charger_work_mode
+                name: Mode
+                secondary_info: last-changed
+              - entity: switch.car_charger_switch
+                name: Charger Power Switch
+                secondary_info: last-changed
+            title: Settings
+            show_header_toggle: false
+      - type: grid
+        cards:
+          - type: heading
+            heading: Charger Stats
+            heading_style: title
+          - type: entities
+            entities:
+              - entity: sensor.car_charger_work_state
+                secondary_info: last-changed
+                name: State
+              - entity: sensor.car_charger_power
+                name: Current Power
+            title: Information
+          - chart_type: line
+            period: hour
+            type: statistics-graph
+            entities:
+              - sensor.ev_charger_total_energy
+            title: Energy Usage (Last 24 Hours)
+            stat_types:
+              - change
+            days_to_show: 1
+            logarithmic_scale: false
+    header: {}
+  - type: sections
+    max_columns: 3
+    title: Car Dashboard
+    path: car
+    icon: mdi:car
+    sections:
+      - type: grid
+        icon: mdi:car-info
+        cards:
+          - type: heading
+            heading: Vehicle Key Info
+            heading_style: title
+          - type: vertical-stack
+            cards:
+              - type: tile
+                entity: sensor.polestar_2_battery_charge_level
+                name: Battery
+                icon: mdi:battery
+                features:
+                  - type: bar-gauge
+              - type: tile
+                entity: sensor.polestar_2_range
+                name: Current Range
+                icon: mdi:map-marker-distance
+              - type: tile
+                entity: sensor.polestar_2_estimate_full_charge_range
+                name: Full Charge Range
+                icon: mdi:map-marker-circle
+              - type: tile
+                entity: sensor.polestar_2_charging_status
+                name: Charging Status
+                vertical: false
+                features_position: bottom
+              - type: tile
+                entity: sensor.polestar_2_charger_connection_status
+                name: Connection Status
+                vertical: false
+                features_position: bottom
+          - type: vertical-stack
+            cards:
+              - type: entities
+                title: Charging Details
+                entities:
+                  - entity: sensor.polestar_2_charging_power
+                    name: Power
+                  - entity: sensor.polestar_2_charging_current
+                    name: Current
+                  - entity: sensor.polestar_2_charging_time
+                    name: Time Remaining
+                  - entity: sensor.polestar_2_estimated_fully_charged_time
+                    name: Fully Charged At
+              - type: entities
+                title: Trip Information (Automatic)
+                entities:
+                  - entity: sensor.polestar_2_trip_meter_automatic
+                    name: Distance
+                  - entity: sensor.polestar_2_average_speed
+                    name: Avg. Speed
+                  - entity: sensor.polestar_2_average_energy_consumption
+                    name: Avg. Energy Consumption
+                  - entity: sensor.polestar_2_car_speed
+                    name: Current Speed
+              - type: entities
+                title: Trip Information (Manual)
+                entities:
+                  - entity: sensor.polestar_2_trip_meter_manual
+                    name: Distance
+              - type: entities
+                title: Other Information
+                entities:
+                  - entity: sensor.polestar_2_odometer
+                    name: Odometer
+                  - entity: sensor.polestar_2_days_to_service
+                    name: Days to Service
+                  - entity: sensor.polestar_2_distance_to_service
+                    name: Distance to Service
+      - type: grid
+        cards:
+          - type: heading
+            heading: Vehicle Status & Location
+          - type: map
+            entities:
+              - entity: device_tracker.polestar_2
+            title: Location
+            aspect_ratio: "16:9"
+          - type: entities
+            title: Location
+            entities:
+              - entity: sensor.polestar_2_geocoded_location
+                name: Current Location
+                icon: mdi:map-marker
+          - type: vertical-stack
+            cards:
+              - type: entities
+                title: Warnings
+                entities:
+                  - entity: sensor.polestar_2_brake_fluid_level_warning
+                    name: Brake Fluid
+                    icon: mdi:alert
+                  - entity: sensor.polestar_2_engine_coolant_level_warning
+                    name: Engine Coolant
+                    icon: mdi:alert
+                  - entity: sensor.polestar_2_oil_level_warning
+                    name: Oil Level
+                    icon: mdi:alert
+                  - entity: sensor.polestar_2_service_warning
+                    name: Service
+                    icon: mdi:alert
+      - type: grid
+        cards:
+          - type: heading
+            heading: Connectivity & System
+            heading_style: title
+          - type: entities
+            title: Connections
+            entities:
+              - entity: binary_sensor.polestar_2_api_connected
+                name: Polestar API
+                icon: mdi:cloud-check
+              - entity: binary_sensor.polestar_2_android_auto
+                name: Android Auto
+                state_color: true
+              - entity: binary_sensor.polestar_2_wi_fi_state
+                name: Wi-Fi
+                state_color: true
+              - entity: sensor.polestar_2_wi_fi_connection
+                name: Network
+              - entity: sensor.polestar_2_wi_fi_signal_strength
+                name: Signal Strength
+          - type: entities
+            title: System
+            entities:
+              - entity: sensor.polestar_2_current_version
+                name: Software Version
+                icon: mdi:update
+    cards: []

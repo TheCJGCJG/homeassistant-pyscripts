@@ -1,0 +1,143 @@
+# EV Charging State Machine Automations
+# These automations wire up the new ev_charging_state_machine.py pyscript.
+# Include in configuration.yaml with: automation: !include_dir_merge_list automations/
+# or add to automation.yaml directly.
+#
+# New input entities required (add via HA UI or helpers YAML):
+#   input_number.ev_charging_gamble_tolerance  (0-100, default 50)
+#   input_number.ev_charging_min_block_hours   (0.5-4.0h, default 1.0)
+#   input_number.ev_charging_max_price         (5-100 p/kWh, default 20)
+#   input_number.ev_charging_boost_duration_hours (0-8h, default 0)
+#   input_button.ev_charging_boost_cancel
+#   input_button.ev_charging_stop
+
+- id: 'ev_sm_run_state_machine'
+  alias: EV Charging - Run State Machine
+  description: Evaluates the EV charging state machine on price updates, input changes, and every 5 minutes.
+  triggers:
+  - trigger: state
+    entity_id: sensor.agile_forecast
+  - trigger: state
+    entity_id: event.octopus_energy_electricity_XXXX_XXXX_current_day_rates
+  - trigger: state
+    entity_id: event.octopus_energy_electricity_XXXX_XXXX_next_day_rates
+  - trigger: state
+    entity_id: input_datetime.ev_charger_ready_by
+  - trigger: state
+    entity_id: input_number.polestar_2_charging_hours_required
+  - trigger: state
+    entity_id: input_number.ev_charging_gamble_tolerance
+  - trigger: state
+    entity_id: input_number.ev_charging_min_block_hours
+  - trigger: state
+    entity_id: input_number.ev_charging_max_price
+  - trigger: state
+    entity_id: input_number.ev_charging_boost_duration_hours
+  - trigger: state
+    entity_id: sensor.car_charger_work_state
+  - trigger: time_pattern
+    hours: '*'
+    minutes: /5
+  - trigger: time
+    at: '16:15:00'
+  conditions: []
+  actions:
+  - action: pyscript.update_ev_charge_state
+    data: {}
+  mode: single
+
+- id: 'ev_sm_enable_charger'
+  alias: EV Charging - Enable Charger (State Machine)
+  description: Turns the charger switch on when the state machine sets charging desired.
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.ev_charging_desired
+    to: 'on'
+  - trigger: time_pattern
+    hours: '*'
+    minutes: /15
+    seconds: '30'
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.ev_charging_desired
+    state: 'on'
+  - condition: device
+    type: is_off
+    device_id: DEVICE_ID_HERE
+    entity_id: ENTITY_ID_HERE
+    domain: switch
+  - condition: device
+    device_id: DEVICE_ID_HERE
+    domain: select
+    entity_id: SELECT_ENTITY_ID_HERE
+    type: selected_option
+    option: Charger Now
+  - condition: state
+    entity_id: input_boolean.automatic_ev_state_changes
+    state: 'on'
+  actions:
+  - type: turn_on
+    device_id: DEVICE_ID_HERE
+    entity_id: ENTITY_ID_HERE
+    domain: switch
+  mode: single
+
+- id: 'ev_sm_disable_charger'
+  alias: EV Charging - Disable Charger (State Machine)
+  description: Turns the charger switch off when the state machine clears charging desired.
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.ev_charging_desired
+    to: 'off'
+  - trigger: time_pattern
+    hours: '*'
+    minutes: /1
+    seconds: '30'
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.ev_charging_desired
+    state: 'off'
+  - condition: device
+    type: is_on
+    device_id: DEVICE_ID_HERE
+    entity_id: ENTITY_ID_HERE
+    domain: switch
+  - condition: device
+    device_id: DEVICE_ID_HERE
+    domain: select
+    entity_id: SELECT_ENTITY_ID_HERE
+    type: selected_option
+    option: Charger Now
+  - condition: state
+    entity_id: input_boolean.automatic_ev_state_changes
+    state: 'on'
+  actions:
+  - type: turn_off
+    device_id: DEVICE_ID_HERE
+    entity_id: ENTITY_ID_HERE
+    domain: switch
+  mode: single
+
+- id: 'ev_sm_cancel_boost'
+  alias: EV Charging - Cancel Boost
+  description: Cancels an active boost when the cancel button is pressed.
+  triggers:
+  - trigger: state
+    entity_id: input_button.ev_charging_boost_cancel
+  conditions: []
+  actions:
+  - action: pyscript.ev_charging_boost_cancel
+    data: {}
+  mode: single
+
+- id: 'ev_sm_stop'
+  alias: EV Charging - Stop
+  description: Clears the entire charging schedule and sets state to idle.
+  triggers:
+  - trigger: state
+    entity_id: input_button.ev_charging_stop
+  conditions: []
+  actions:
+  - action: pyscript.ev_charging_stop
+    data: {}
+  mode: single

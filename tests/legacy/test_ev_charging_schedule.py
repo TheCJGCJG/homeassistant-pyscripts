@@ -1,3 +1,4 @@
+# LEGACY — tests for update_ev_charging_schedule.py (superseded by ev_charging_state_machine.py)
 """Tests for update_ev_charging_schedule.py"""
 import pytest
 from datetime import datetime, timedelta
@@ -6,7 +7,7 @@ import sys
 import os
 
 # Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src', 'legacy'))
 
 # Mock Home Assistant modules before importing
 sys.modules['homeassistant'] = MagicMock()
@@ -211,7 +212,7 @@ class TestGetPriceData:
         """Test collection of predicted rates"""
         def mock_get(entity_id):
             mock_sensor = Mock()
-            if 'agile_predict' in entity_id:
+            if 'agile_forecast' in entity_id:
                 mock_sensor.attributes = {
                     'prices': [
                         {'date_time': '2024-01-16T10:00:00', 'agile_pred': 1550},  # p/kWh
@@ -221,11 +222,11 @@ class TestGetPriceData:
             else:
                 mock_sensor.attributes = {'rates': []}
             return mock_sensor
-        
+
         mock_hass.states.get.side_effect = mock_get
-        
+
         prices = get_price_data()
-        
+
         # Should have predicted prices converted to £/kWh
         predicted_prices = [p for p in prices if p['source'] == 'predicted']
         assert len(predicted_prices) == 2
@@ -494,7 +495,7 @@ class TestPriceDataPriority:
                         {'start': dt2, 'value_inc_vat': 16.0}
                     ]
                 }
-            elif 'agile_predict' in entity_id:
+            elif 'agile_forecast' in entity_id:
                 # Predicted prices for all three slots
                 mock_sensor.attributes = {
                     'prices': [
@@ -526,7 +527,7 @@ class TestPriceDataPriority:
         """Test that predicted prices are converted from p/kWh to £/kWh"""
         def mock_get(entity_id):
             mock_sensor = Mock()
-            if 'agile_predict' in entity_id:
+            if 'agile_forecast' in entity_id:
                 mock_sensor.attributes = {
                     'prices': [
                         {'date_time': '2024-01-15T12:00:00', 'agile_pred': 1550},  # 15.50 £/kWh

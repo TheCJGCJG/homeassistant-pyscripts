@@ -1,3 +1,5 @@
+# LEGACY — superseded by ev_charging_state_machine.py
+# Kept for reference. Do not deploy alongside the new state machine.
 # pyscript/agile_forecast_processor.py
 """
 Process Agile electricity price forecasts into time blocks for Home Assistant.
